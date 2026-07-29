@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Woodshed — practice tracker</title>
+
+  <!-- Fonts: Space Grotesk (headings), DM Sans (body), JetBrains Mono (numbers).
+       These load from Google Fonts. Offline, the CSS falls back to system fonts. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       HEADER — wordmark + current streak
+       ============================================================ -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <div>
+        <h1 class="brand__name">Woodshed</h1>
+        <p class="brand__tag">Put in the hours. Watch them add up.</p>
+      </div>
+    </div>
+
+    <div class="streak" id="streak" title="Consecutive days with at least one logged session">
+      <span class="streak__num" id="streakNum">0</span>
+      <span class="streak__label">day<span id="streakPlural">s</span><br>streak</span>
+    </div>
+  </header>
+
+  <main class="grid">
+
+    <!-- ============================================================
+         LOG A SESSION
+         ============================================================ -->
+    <section class="card card--log">
+      <h2 class="card__title">Log a session</h2>
+
+      <form id="logForm" autocomplete="off" novalidate>
+        <div class="field">
+          <label for="area">What did you work on?</label>
+          <input
+            type="text"
+            id="area"
+            name="area"
+            list="areaOptions"
+            placeholder="Scales, Giant Steps, sight reading…"
+            maxlength="60"
+            required>
+          <!-- Autocomplete source: rebuilt from previously logged areas on every render -->
+          <datalist id="areaOptions"></datalist>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="minutes">Minutes</label>
+            <input type="number" id="minutes" name="minutes" min="1" max="1440" step="1" placeholder="30" required>
+          </div>
+          <div class="field">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="note">Note <span class="opt">optional</span></label>
+          <textarea id="note" name="note" rows="2" maxlength="280" placeholder="Tempo, what clicked, what didn't…"></textarea>
+        </div>
+
+        <p class="form-error" id="formError" role="alert" hidden></p>
+
+        <button type="submit" class="btn btn--primary">Log it</button>
+      </form>
+    </section>
+
+    <!-- ============================================================
+         THIS WEEK — goal, progress bar, headline stats
+         ============================================================ -->
+    <section class="card card--week">
+      <div class="card__head">
+        <h2 class="card__title">This week</h2>
+        <div class="goal-edit">
+          <label for="goalInput">Goal</label>
+          <input type="number" id="goalInput" min="1" max="10080" step="5" inputmode="numeric">
+          <span class="goal-edit__unit">min</span>
+        </div>
+      </div>
+
+      <div class="week-readout">
+        <span class="week-readout__now" id="weekMinutes">0</span>
+        <span class="week-readout__of" id="weekOf">of 300 min</span>
+      </div>
+
+      <div class="bar" id="weekBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="bar__fill" id="weekFill"></div>
+      </div>
+      <p class="bar__caption" id="weekCaption">Nothing logged yet this week.</p>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat__num" id="weekSessions">0</span>
+          <span class="stat__label">sessions<br>this week</span>
+        </div>
+        <div class="stat">
+          <span class="stat__num" id="allTimeHours">0</span>
+          <span class="stat__label">hours<br>all time</span>
+        </div>
+        <div class="stat">
+          <span class="stat__num" id="allTimeSessions">0</span>
+          <span class="stat__label">sessions<br>all time</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         WHERE YOUR TIME GOES — all-time minutes per area, ranked
+         ============================================================ -->
+    <section class="card card--breakdown">
+      <div class="card__head">
+        <h2 class="card__title">Where your time goes</h2>
+        <span class="card__hint">all time</span>
+      </div>
+      <div id="breakdown" class="breakdown"></div>
+    </section>
+
+    <!-- ============================================================
+         RECENT SESSIONS — delete one, or reset everything
+         ============================================================ -->
+    <section class="card card--sessions">
+      <div class="card__head">
+        <h2 class="card__title">Recent sessions</h2>
+        <button type="button" class="btn btn--ghost btn--danger" id="resetAll">Reset all</button>
+      </div>
+      <div id="sessionList" class="session-list"></div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <p>Everything lives in this browser's localStorage. No account, no server.</p>
+    <div class="foot__actions">
+      <button type="button" class="btn btn--ghost" id="exportBtn">Export a backup</button>
+      <button type="button" class="btn btn--ghost" id="importBtn">Import</button>
+      <!-- Hidden picker driven by the Import button above -->
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+  </footer>
+
+  <!-- Small transient confirmation message -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
