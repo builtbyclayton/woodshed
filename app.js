@@ -253,6 +253,23 @@ const el = {
   allTimeHours:  document.getElementById('allTimeHours'),
   allTimeSessions: document.getElementById('allTimeSessions'),
 
+  practiceCard:  document.getElementById('practiceCard'),
+  practiceIdle:  document.getElementById('practiceIdle'),
+  practiceLive:  document.getElementById('practiceLive'),
+  practiceDone:  document.getElementById('practiceDone'),
+  practiceArea:  document.getElementById('practiceArea'),
+  practiceError: document.getElementById('practiceError'),
+  startBtn:      document.getElementById('startBtn'),
+  liveEyebrow:   document.getElementById('liveEyebrow'),
+  liveArea:      document.getElementById('liveArea'),
+  liveClock:     document.getElementById('liveClock'),
+  pauseBtn:      document.getElementById('pauseBtn'),
+  finishBtn:     document.getElementById('finishBtn'),
+  doneSummary:   document.getElementById('doneSummary'),
+  doneNote:      document.getElementById('doneNote'),
+  discardBtn:    document.getElementById('discardBtn'),
+  saveBtn:       document.getElementById('saveBtn'),
+
   breakdown:     document.getElementById('breakdown'),
   sessionList:   document.getElementById('sessionList'),
   resetAll:      document.getElementById('resetAll'),
@@ -583,6 +600,224 @@ function importData(text) {
 }
 
 /* ------------------------------------------------------------
+   7c. PRACTICE MODE
+
+   A running timer that logs the session for you when you stop.
+
+   Elapsed time is derived from TIMESTAMPS, never from counting
+   ticks. Background tabs get throttled and phones sleep, so an
+   interval-counter would drift or stall. The interval here only
+   redraws the clock — it isn't the source of truth.
+
+   The whole thing is mirrored to localStorage on every change,
+   so reloading mid-session (or a phone locking and coming back)
+   picks up exactly where you were.
+   ------------------------------------------------------------ */
+
+const KEY_ACTIVE = 'woodshed.active.v1';
+
+/**
+ * The in-progress session, or null.
+ * {
+ *   area:          "Giant Steps",
+ *   startedAt:     1753800000000,  when the current running stretch began
+ *   accumulatedMs: 0,              time banked before the latest pause
+ *   paused:        false,
+ *   finishedMs:    null            set once you hit Finish — confirm screen
+ * }
+ */
+let active = null;
+let tickHandle = null;
+let wakeLock = null;
+
+function loadActive() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY_ACTIVE) || 'null');
+    if (raw && typeof raw.area === 'string' && Number.isFinite(raw.accumulatedMs)) {
+      active = raw;
+    }
+  } catch (err) {
+    console.warn('Could not restore the running session.', err);
+    active = null;
+  }
+}
+
+function saveActive() {
+  try {
+    if (active) localStorage.setItem(KEY_ACTIVE, JSON.stringify(active));
+    else localStorage.removeItem(KEY_ACTIVE);
+  } catch (err) {
+    console.error('Could not save the running session.', err);
+  }
+}
+
+/** Milliseconds practiced so far in the active session. */
+function elapsedMs() {
+  if (!active) return 0;
+  if (active.finishedMs != null) return active.finishedMs;
+  if (active.paused) return active.accumulatedMs;
+  return active.accumulatedMs + (Date.now() - active.startedAt);
+}
+
+/** "07:42" under an hour, "1:07:42" over it. */
+function formatClock(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+/** Timed milliseconds -> whole minutes. Anything started counts as 1. */
+function msToMinutes(ms) {
+  return Math.max(1, Math.round(ms / 60000));
+}
+
+/* --- screen wake lock: the phone is on a music stand, let it stay awake --- */
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (err) {
+    // Denied, unsupported, or not visible — the timer works fine regardless
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+// Browsers drop the lock whenever the tab is hidden; take it back on return
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && active && !active.paused && active.finishedMs == null) {
+    requestWakeLock();
+    renderPractice(); // catch the clock up after time in the background
+  }
+});
+
+/* --- state transitions --- */
+
+function startPractice(area) {
+  active = {
+    area,
+    startedAt: Date.now(),
+    accumulatedMs: 0,
+    paused: false,
+    finishedMs: null
+  };
+  saveActive();
+  requestWakeLock();
+  renderPractice();
+}
+
+function togglePause() {
+  if (!active || active.finishedMs != null) return;
+
+  if (active.paused) {
+    // Resuming: restart the clock from now, keeping what's already banked
+    active.startedAt = Date.now();
+    active.paused = false;
+    requestWakeLock();
+  } else {
+    // Pausing: bank the running stretch so it can't drift
+    active.accumulatedMs += Date.now() - active.startedAt;
+    active.paused = true;
+    releaseWakeLock();
+  }
+  saveActive();
+  renderPractice();
+}
+
+function finishPractice() {
+  if (!active || active.finishedMs != null) return;
+  active.finishedMs = elapsedMs(); // freeze it before anything else can change
+  releaseWakeLock();
+  saveActive();
+  renderPractice();
+  el.doneNote.focus();
+}
+
+function savePracticeSession() {
+  if (!active || active.finishedMs == null) return;
+
+  const minutes = msToMinutes(active.finishedMs);
+  const area = active.area;
+
+  addSession(area, minutes, todayISO(), el.doneNote.value.trim());
+
+  el.doneNote.value = '';
+  active = null;
+  saveActive();
+  renderPractice();
+
+  toast(`Logged ${formatMinutes(minutes)} of ${area}`);
+}
+
+function discardPractice() {
+  if (!active) return;
+  // No confirm dialog on purpose: Discard only appears on the finished
+  // screen, sitting next to Save, so choosing it is already deliberate.
+  // A second prompt would just be friction — and a browser that blocks
+  // dialogs would strand you here with no way out.
+  el.doneNote.value = '';
+  active = null;
+  saveActive();
+  releaseWakeLock();
+  renderPractice();
+  toast('Session discarded');
+}
+
+/* --- rendering --- */
+
+function renderPractice() {
+  const running  = !!active && active.finishedMs == null;
+  const finished = !!active && active.finishedMs != null;
+
+  el.practiceIdle.hidden = running || finished;
+  el.practiceLive.hidden = !running;
+  el.practiceDone.hidden = !finished;
+
+  document.body.classList.toggle('is-practicing', running);
+  el.practiceCard.classList.toggle('is-paused', running && active.paused);
+
+  if (running) {
+    el.liveArea.textContent = active.area;
+    el.liveClock.textContent = formatClock(elapsedMs());
+    el.liveEyebrow.textContent = active.paused ? 'Paused' : 'In the shed';
+    el.pauseBtn.textContent = active.paused ? 'Resume' : 'Pause';
+  }
+
+  if (finished) {
+    const minutes = msToMinutes(active.finishedMs);
+    el.doneSummary.innerHTML =
+      `<em>${formatMinutes(minutes)}</em> on ${escapeHtml(active.area)}`;
+  }
+
+  // Only run an interval while a clock is actually moving
+  const shouldTick = running && !active.paused;
+  if (shouldTick && !tickHandle) {
+    tickHandle = setInterval(() => {
+      el.liveClock.textContent = formatClock(elapsedMs());
+    }, 1000);
+  } else if (!shouldTick && tickHandle) {
+    clearInterval(tickHandle);
+    tickHandle = null;
+  }
+}
+
+/** Area names are user input and this is the one spot using innerHTML. */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ------------------------------------------------------------
    8. EVENTS
    ------------------------------------------------------------ */
 
@@ -632,6 +867,34 @@ el.goalInput.addEventListener('blur', () => {
   el.goalInput.value = weeklyGoal;
 });
 
+/* --- practice mode controls --- */
+
+el.startBtn.addEventListener('click', () => {
+  const area = el.practiceArea.value.trim();
+  if (!area) {
+    el.practiceError.textContent = 'What are you working on?';
+    el.practiceError.hidden = false;
+    el.practiceArea.focus();
+    return;
+  }
+  el.practiceError.hidden = true;
+  el.practiceArea.value = '';
+  startPractice(area);
+});
+
+// Enter in the area field starts the session
+el.practiceArea.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    el.startBtn.click();
+  }
+});
+
+el.pauseBtn.addEventListener('click', togglePause);
+el.finishBtn.addEventListener('click', finishPractice);
+el.saveBtn.addEventListener('click', savePracticeSession);
+el.discardBtn.addEventListener('click', discardPractice);
+
 el.resetAll.addEventListener('click', resetAll);
 
 el.exportBtn.addEventListener('click', exportData);
@@ -669,6 +932,11 @@ function toast(message) {
    ------------------------------------------------------------ */
 
 load();
+loadActive();                // picks a session back up after a reload
 el.date.value = todayISO();  // date field defaults to today
 el.date.max = todayISO();    // no logging practice you haven't done yet
 render();
+renderPractice();
+
+// A session restored from storage was already running, so take the lock back
+if (active && !active.paused && active.finishedMs == null) requestWakeLock();

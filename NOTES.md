@@ -42,10 +42,19 @@ up or does it just feel that way."
 Current streak is motivating right up until you break it. A personal best gives the number
 somewhere to go after a miss.
 
-**A session timer**
-Start/stop instead of typing minutes from memory. Changes the app from a journal into
-something you open *before* practicing. Bigger behavioural shift than it sounds — worth doing
-deliberately, not as a bolt-on.
+~~**A session timer**~~ — **shipped 2026-07-30 as Practice Mode.** Parked at first as a
+"behavioural bet," then promoted to the top of the list after the first-user verdict: the app
+was boring because it was a *ledger*, not a practice tool. The practicing happened elsewhere
+and the app was just data entry about it. Duolingo is sticky because the lesson lives inside
+the app — the activity and the reward share a home. Practice Mode is the move that makes that
+possible here.
+
+**XP / points**
+Deliberately not built yet, and the reason matters: rewards on *self-reported* minutes are
+hollow. If you can type `500` into a box and collect the badge, the badge means nothing and
+musicians will feel that within a week. XP is only honest on top of time that a timer actually
+ran. Revisit once Practice Mode has been in real use — if it works, XP on timed minutes is
+worth building; if it doesn't, XP was never the problem.
 
 **Area archiving / merging**
 After a few months there'll be a long tail of one-off areas, plus near-duplicates like
@@ -90,3 +99,8 @@ Not ideas — choices already made, written down so I don't relitigate them late
   overflows its track looks broken; the number shouldn't be hidden though.
 - **No streak-breaking guilt copy anywhere.** Empty states are neutral. Practice trackers that
   nag are practice trackers you stop opening.
+- **Discard has no confirm dialog.** It only appears on the finished screen next to Save, so
+  choosing it is already deliberate — and a browser that blocks dialogs would strand you there
+  with no way out.
+- **Reset all leaves a running session alone.** Wiping your history shouldn't kill practice
+  you're in the middle of.

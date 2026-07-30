@@ -36,8 +36,11 @@ localStorage. Data logged one way won't show up the other way. Pick one and stic
 
 ## What v1 does
 
-- **Log a session** — what you worked on (free text, autocompletes from areas you've used
-  before), minutes, date (defaults to today), and an optional note.
+- **Practice mode** — type what you're working on, hit start, put the phone on the stand.
+  The timer runs, the rest of the page dims, and the session logs itself when you finish.
+  Pause/resume, and a discard option so a mis-tap never becomes a fake session.
+- **Log a past session** — backfill practice you didn't time: area (free text, autocompletes
+  from areas you've used before), minutes, date, and an optional note.
 - **This week** — total minutes against an editable weekly goal, as a progress bar, plus
   session count this week and all-time hours.
 - **Streak** — consecutive days with at least one session, ending today or yesterday.
@@ -75,6 +78,13 @@ there if you want Sunday weeks.
 
 **Areas group case-insensitively.** "scales" and "Scales" are one area in the breakdown and
 autocomplete. The display name comes from whichever entry you logged most recently.
+
+**The timer is derived from timestamps, never from counting ticks.** `elapsedMs()` computes
+from `startedAt` + `accumulatedMs`; the `setInterval` only repaints the clock. Background tabs
+get throttled and phones sleep, so a tick-counter would drift or stall. Pausing banks the
+running stretch into `accumulatedMs` so it can't drift across a pause either. The active
+session mirrors to `woodshed.active.v1` on every change, which is what lets a reload — or a
+locked phone — pick up exactly where you were.
 
 **Rendering is a full redraw.** Any change calls `save()` then `render()`, which rebuilds
 every panel from state. No diffing. The dataset is tiny, so this stays fast and there's

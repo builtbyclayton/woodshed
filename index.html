@@ -36,10 +36,58 @@
   <main class="grid">
 
     <!-- ============================================================
-         LOG A SESSION
+         PRACTICE MODE — the hero. Three states live in this one card:
+         idle -> live -> done. Only one is ever visible.
+         ============================================================ -->
+    <section class="card card--practice" id="practiceCard">
+
+      <!-- STATE 1: idle -->
+      <div class="practice__pane" id="practiceIdle">
+        <h2 class="practice__title">Practice mode</h2>
+        <p class="practice__sub">Set it going, put the phone on the stand, play.</p>
+        <div class="practice__start">
+          <input
+            type="text"
+            id="practiceArea"
+            list="areaOptions"
+            placeholder="What are you working on?"
+            maxlength="60"
+            autocomplete="off">
+          <button type="button" class="btn btn--start" id="startBtn">Start practicing</button>
+        </div>
+        <p class="form-error practice__error" id="practiceError" role="alert" hidden></p>
+      </div>
+
+      <!-- STATE 2: running -->
+      <div class="practice__pane" id="practiceLive" hidden>
+        <p class="practice__eyebrow" id="liveEyebrow">In the shed</p>
+        <p class="practice__area" id="liveArea"></p>
+        <p class="practice__clock" id="liveClock">00:00</p>
+        <div class="practice__controls">
+          <button type="button" class="btn btn--control" id="pauseBtn">Pause</button>
+          <button type="button" class="btn btn--start btn--finish" id="finishBtn">Finish</button>
+        </div>
+      </div>
+
+      <!-- STATE 3: finished, waiting to be saved or thrown away -->
+      <div class="practice__pane" id="practiceDone" hidden>
+        <p class="practice__eyebrow">That's a session</p>
+        <p class="practice__summary" id="doneSummary"></p>
+        <textarea id="doneNote" rows="2" maxlength="280"
+                  placeholder="How'd it go? What clicked, what didn't… (optional)"></textarea>
+        <div class="practice__controls">
+          <button type="button" class="btn btn--control" id="discardBtn">Discard</button>
+          <button type="button" class="btn btn--start" id="saveBtn">Save session</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         LOG A PAST SESSION — backfill for practice you didn't time
          ============================================================ -->
     <section class="card card--log">
-      <h2 class="card__title">Log a session</h2>
+      <h2 class="card__title">Log a past session</h2>
 
       <form id="logForm" autocomplete="off" novalidate>
         <div class="field">

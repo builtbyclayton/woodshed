@@ -152,6 +152,141 @@ body {
   padding: 22px;
 }
 
+/* [hidden] has to beat the flex/grid display rules below it */
+[hidden] { display: none !important; }
+
+/* ---------- practice mode (the hero) ---------- */
+
+.card--practice {
+  grid-column: 1 / -1;
+  padding: 30px;
+  position: relative;
+  overflow: hidden;
+  /* A pool of warm light under the card, like a lamp in the corner */
+  background:
+    radial-gradient(620px 260px at 50% 0%, rgba(240, 169, 74, 0.09), transparent 70%),
+    var(--ink-800);
+}
+
+.practice__pane { position: relative; z-index: 1; }
+
+.practice__title {
+  margin: 0 0 4px;
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.practice__sub {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+.practice__start { display: flex; gap: 12px; }
+
+.practice__start input {
+  flex: 1;
+  padding: 15px 17px;
+  font-size: 16px;
+}
+
+.practice__error { margin: 12px 0 0; }
+
+/* The big amber commitment button */
+.btn--start {
+  padding: 15px 30px;
+  border: none;
+  background: var(--amber);
+  color: #24170a;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 6px 24px rgba(240, 169, 74, 0.22);
+}
+
+.btn--start:hover { background: #ffbc5f; }
+
+.btn--finish { background: var(--sage); box-shadow: 0 6px 24px rgba(143, 176, 138, 0.2); }
+.btn--finish:hover { background: #a6c9a1; }
+
+.btn--control {
+  padding: 15px 30px;
+  border: 1px solid var(--ink-600);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.btn--control:hover { color: var(--text); border-color: var(--text-3); }
+
+/* --- running state --- */
+
+.practice__eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--amber);
+}
+
+.practice__area {
+  margin: 0 0 2px;
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* The number you stare at from across the room */
+.practice__clock {
+  margin: 0 0 24px;
+  font-family: var(--font-mono);
+  font-size: clamp(56px, 12vw, 92px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-shadow: 0 0 60px rgba(240, 169, 74, 0.22);
+}
+
+/* Paused reads as "stopped", not "broken" */
+.is-paused .practice__clock { color: var(--text-3); text-shadow: none; }
+.is-paused .practice__eyebrow { color: var(--text-3); }
+
+.practice__controls { display: flex; gap: 12px; }
+
+.practice__summary {
+  margin: 0 0 18px;
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.practice__summary em {
+  font-style: normal;
+  color: var(--amber);
+  font-family: var(--font-mono);
+}
+
+#doneNote { margin-bottom: 18px; }
+
+/* While a session runs, everything else dims out of the way */
+body.is-practicing .card:not(.card--practice),
+body.is-practicing .foot {
+  opacity: 0.32;
+  filter: saturate(0.6);
+  transition: opacity 0.5s, filter 0.5s;
+}
+
+body.is-practicing .card--practice { border-color: rgba(240, 169, 74, 0.35); }
+
+@media (max-width: 560px) {
+  .practice__start { flex-direction: column; }
+  .practice__controls .btn { flex: 1; padding: 15px 12px; }
+}
+
 /* The week card sits next to the taller log form, so its stats row is
    pushed to the bottom instead of leaving a gap under it. */
 .card--week { display: flex; flex-direction: column; }
